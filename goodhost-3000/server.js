@@ -74,28 +74,19 @@ app.get("/api/emails", (req, res) => {
 });
 
 // === DELETE EMAIL (SECURE - POST + CSRF) ===
-app.post("/api/emails/delete", (req, res) => {
-    const { id, _csrf_token } = req.body;
+delBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
 
-    const cookie = req.headers.cookie || "";
-    const match = cookie.match(/SessionID=([^\s;]+)/);
-
-    if (!match) return res.status(403).send("Forbidden");
-
-    const sessionId = match[1];
-
-    if (csrfTokens[sessionId] !== _csrf_token) {
-        return res.status(403).send("Invalid CSRF token");
-    }
-
-    const index = emails.findIndex(e => e.id === id);
-
-    if (index !== -1) {
-        emails.splice(index, 1);
-        return res.send(`Email ${id} deleted`);
-    }
-
-    res.status(404).send("Email not found");
+    fetch(`/api/emails/delete`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            id: email.id,
+            _csrf_token: csrfToken
+        })
+    }).then(() => location.reload());
 });
 // === LOGOUT ===
 app.post("/api/logout", (req, res) => {

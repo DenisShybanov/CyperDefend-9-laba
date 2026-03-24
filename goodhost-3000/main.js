@@ -48,29 +48,3 @@ emails.forEach(email => {
     sidebar.appendChild(item);
 });
 
-emails.forEach(email => {
-    const item = document.createElement("div");
-    item.className = "email-item";
-
-    const text = document.createElement("span");
-    text.textContent = `${email.sender}: ${email.subject}`;
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-
-    delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-
-        fetch(`/api/emails/delete/${email.id}`)
-            .then(() => location.reload());
-    });
-
-    item.appendChild(text);
-    item.appendChild(delBtn);
-
-    item.addEventListener("click", () => {
-        main.innerHTML = `<h3>${email.subject}</h3><p>${email.body}</p>`;
-    });
-
-    sidebar.appendChild(item);
-});
