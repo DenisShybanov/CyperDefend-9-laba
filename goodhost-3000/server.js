@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-
+let csrfTokens = {}; // sessionId -> token
 const app = express();
 app.use(express.json());
 
@@ -14,23 +14,12 @@ let activeSessionsTTL = []; // { id: "SessionID", timestamp: Date.now() }
 const SESSION_TTL = 2 * 60 * 1000; // 2 хвилини
 
 // === LOGIN ===
-app.get("/login", (req, res) => {
-    const username = req.query.username;
-    const password = req.query.password;
+const csrfToken = Math.random().toString(36).substring(2);
+csrfTokens[sessionId] = csrfToken;
 
-    if (users[username] && users[username] === password) {
-        const sessionId = `${username}-session-${Date.now()}`;
-        activeSessionsTTL.push({ id: sessionId, timestamp: Date.now() });
-
-        res.setHeader(
-            "Set-Cookie",
-            `SessionID=${sessionId}; Path=/api; HttpOnly; Secure; SameSite=Strict`
-        );
-
-        res.send(`Login successful. Logged in as ${username}`);
-    } else {
-        res.status(401).send("Invalid credentials");
-    }
+res.json({
+    message: `Login successful. Logged in as ${username}`,
+    csrfToken
 });
 
 // === READ CONFIG ===
@@ -84,6 +73,30 @@ app.get("/api/emails", (req, res) => {
     res.json(emails);
 });
 
+// === DELETE EMAIL (SECURE - POST + CSRF) ===
+app.post("/api/emails/delete", (req, res) => {
+    const { id, _csrf_token } = req.body;
+
+    const cookie = req.headers.cookie || "";
+    const match = cookie.match(/SessionID=([^\s;]+)/);
+
+    if (!match) return res.status(403).send("Forbidden");
+
+    const sessionId = match[1];
+
+    if (csrfTokens[sessionId] !== _csrf_token) {
+        return res.status(403).send("Invalid CSRF token");
+    }
+
+    const index = emails.findIndex(e => e.id === id);
+
+    if (index !== -1) {
+        emails.splice(index, 1);
+        return res.send(`Email ${id} deleted`);
+    }
+
+    res.status(404).send("Email not found");
+});
 // === LOGOUT ===
 app.post("/api/logout", (req, res) => {
     const cookie = req.headers.cookie || "";

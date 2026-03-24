@@ -1,16 +1,18 @@
 // LOGIN
+let csrfToken = "";
+
 function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
     fetch(`/login?username=${username}&password=${password}`)
-        .then(res => res.text())
+        .then(res => res.json())
         .then(data => {
-            document.getElementById("status").innerText = data;
+            csrfToken = data.csrfToken;
+            document.getElementById("status").innerText = data.message;
             location.reload();
         });
 }
-
 // LOGOUT
 document.getElementById("logoutBtn").addEventListener("click", async () => {
     await fetch("/api/logout", { method: "POST", credentials: "include" });
@@ -19,22 +21,56 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 });
 
 // EMAILS
-fetch("/api/emails")
-    .then(res => res.json())
-    .then(emails => {
-        const sidebar = document.getElementById("sidebar");
-        const main = document.getElementById("main");
+emails.forEach(email => {
+    const item = document.createElement("div");
+    item.className = "email-item";
 
-        emails.forEach(email => {
-            const item = document.createElement("div");
-            item.className = "email-item";
-            item.textContent = `${email.sender}: ${email.subject}`;
+    const text = document.createElement("span");
+    text.textContent = `${email.sender}: ${email.subject}`;
 
-            item.addEventListener("click", () => {
-                main.innerHTML = `<h3>${email.subject}</h3><p>${email.body}</p>`;
-            });
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
 
-            sidebar.appendChild(item);
-        });
-    })
-    .catch(err => console.error("Error fetching emails:", err));
+    delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        fetch(`/api/emails/delete/${email.id}`)
+            .then(() => location.reload());
+    });
+
+    item.appendChild(text);
+    item.appendChild(delBtn);
+
+    item.addEventListener("click", () => {
+        main.innerHTML = `<h3>${email.subject}</h3><p>${email.body}</p>`;
+    });
+
+    sidebar.appendChild(item);
+});
+
+emails.forEach(email => {
+    const item = document.createElement("div");
+    item.className = "email-item";
+
+    const text = document.createElement("span");
+    text.textContent = `${email.sender}: ${email.subject}`;
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+
+    delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        fetch(`/api/emails/delete/${email.id}`)
+            .then(() => location.reload());
+    });
+
+    item.appendChild(text);
+    item.appendChild(delBtn);
+
+    item.addEventListener("click", () => {
+        main.innerHTML = `<h3>${email.subject}</h3><p>${email.body}</p>`;
+    });
+
+    sidebar.appendChild(item);
+});
